@@ -1,0 +1,382 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Futwork Offline</title>
+<style>
+:root {
+  --bg: #f6f5f2; --card: #ffffff; --ink: #1d1c1a; --muted: #75716b; --line: #e6e3dd;
+  --accent: #2f4fd8; --accent-ink: #fff; --up: #1a8a4a; --down: #c8372d;
+  --c1: #2f4fd8; --c2: #e0892b; --c3: #1f9e8a;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #141414; --card: #1e1e1d; --ink: #f0eee9; --muted: #a09b93; --line: #33322f;
+    --accent: #7f95ff; --accent-ink: #10131f; --up: #4fcf86; --down: #ff7a6e;
+    --c1: #7f95ff; --c2: #f0a85a; --c3: #4cc7b3;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+button, input, select { font: inherit; color: inherit; }
+.wrap { max-width: 1180px; margin: 0 auto; padding: 24px 16px 60px; }
+.top { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+h1 { margin: 0; font-size: 28px; letter-spacing: -0.02em; }
+h2 { margin: 0 0 12px; font-size: 16px; }
+.sub { margin: 4px 0 0; color: var(--muted); }
+.muted { color: var(--muted); }
+.small { font-size: 12px; }
+.refresh { display: flex; gap: 10px; align-items: center; }
+.refresh button { border: 1px solid var(--line); background: var(--card); padding: 7px 14px; border-radius: 8px; cursor: pointer; }
+
+.tabs { display: flex; gap: 4px; margin: 22px 0 14px; border-bottom: 1px solid var(--line); overflow-x: auto; }
+.tabs button { background: none; border: 0; padding: 10px 16px; cursor: pointer; color: var(--muted); border-bottom: 2px solid transparent; font-weight: 600; white-space: nowrap; }
+.tabs button.on { color: var(--ink); border-bottom-color: var(--accent); }
+
+.filters { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: grid; gap: 10px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { border: 1px solid var(--line); background: transparent; padding: 6px 12px; border-radius: 999px; cursor: pointer; }
+.chip.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.row label { display: flex; gap: 6px; align-items: center; color: var(--muted); }
+input, select { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; }
+.period { margin: 0; }
+
+.error { margin-top: 14px; padding: 12px 14px; border-radius: 10px; background: color-mix(in srgb, var(--down) 12%, transparent); color: var(--down); }
+.empty { padding: 40px; text-align: center; color: var(--muted); }
+
+.kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 14px; }
+.kpi { text-align: left; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: grid; gap: 4px; cursor: pointer; }
+.kpi.static { cursor: default; }
+.kpi.on { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.kl { color: var(--muted); font-size: 13px; }
+.kv { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.kc { display: flex; gap: 8px; align-items: center; font-size: 13px; min-height: 18px; }
+.delta { font-size: 12px; font-weight: 600; margin-left: 6px; white-space: nowrap; }
+.delta.up { color: var(--up); } .delta.down { color: var(--down); } .delta.flat { color: var(--muted); }
+
+.metricTabs { display: inline-flex; margin: 18px 0 0; background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 3px; }
+.metricTabs button { border: 0; background: none; padding: 7px 16px; border-radius: 8px; cursor: pointer; color: var(--muted); font-weight: 600; }
+.metricTabs button.on { background: var(--accent); color: var(--accent-ink); }
+
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-top: 14px; }
+.cardHead { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+.legend { display: flex; gap: 14px; font-size: 13px; color: var(--muted); }
+.legend i, .dot { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+
+.bars { display: flex; align-items: flex-end; gap: 3px; height: 200px; overflow-x: auto; padding-top: 18px; }
+.barCol { flex: 1 0 18px; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; position: relative; }
+.stack { width: 100%; max-width: 32px; display: flex; flex-direction: column-reverse; border-radius: 4px 4px 0 0; overflow: hidden; min-height: 0; }
+.barVal { font-size: 10px; color: var(--muted); margin-bottom: 2px; }
+.barLbl { font-size: 10px; color: var(--muted); margin-top: 4px; }
+
+.scroll { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: top; white-space: nowrap; }
+th { font-size: 12px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+.num { text-align: right; }
+tr.total td { font-weight: 700; border-bottom: 0; }
+.tag { font-size: 12px; padding: 2px 8px; border-radius: 999px; background: var(--bg); color: var(--muted); }
+.tag.ok { background: color-mix(in srgb, var(--up) 15%, transparent); color: var(--up); }
+
+@media (max-width: 760px) {
+  .kpis { grid-template-columns: repeat(2, 1fr); }
+  .kv { font-size: 22px; }
+}
+
+[hidden] { display: none !important; }
+
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Futwork Offline</h1>
+      <p class="sub">Visits, converts &amp; collections across Artium centres</p>
+    </div>
+    <div class="refresh"><span class="muted" id="updated"></span><button id="refreshBtn">↻ Refresh</button></div>
+  </header>
+
+  <nav class="tabs" id="tabs"></nav>
+
+  <section class="filters">
+    <div class="chips" id="chips"></div>
+    <div class="row" id="customRow" hidden>
+      <label>From <input type="date" id="cs"></label>
+      <label>To <input type="date" id="ce"></label>
+    </div>
+    <div class="row">
+      <label>Compare with
+        <select id="cmpMode">
+          <option value="previous">Previous period</option>
+          <option value="custom">Custom date / range</option>
+          <option value="none">No comparison</option>
+        </select>
+      </label>
+      <span class="row" id="cmpFields" hidden>
+        <label>From <input type="date" id="ps"></label>
+        <label>To <input type="date" id="pe"></label>
+        <button class="chip" id="singleDay">Single day</button>
+      </span>
+    </div>
+    <p class="period" id="period"></p>
+  </section>
+
+  <div class="error" id="error" hidden></div>
+  <main id="main"></main>
+</div>
+<script>
+// ===== Settings =====
+const SHEET_ID = "1EtJk7JJHxrCX2lPo8-PHRFpWBdYuz6P9luq_vRQPmk0";
+const SHEET_GID = "610109948"; // "Futwork" tab
+const SHOW_FULL_PHONE = false;
+// =====================
+
+const CENTRES = ["Alwarpet", "Thoraipakkam", "Bangalore"];
+const TABS = ["Master", ...CENTRES];
+const METRICS = [["visits", "Visits"], ["converts", "Converts"], ["collections", "Collections"]];
+const PRESETS = [["today", "Today"], ["yesterday", "Yesterday"], ["thisWeek", "This week"], ["lastWeek", "Last week"],
+  ["thisMonth", "This month"], ["lastMonth", "Last month"], ["custom", "Custom"]];
+const COLORS = { Alwarpet: "var(--c1)", Thoraipakkam: "var(--c2)", Bangalore: "var(--c3)" };
+const MONTHS = { jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5, jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11 };
+
+// ---------- dates ----------
+const todayIST = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(new Date());
+const toDate = (s) => { const [y, m, d] = s.split("-").map(Number); return new Date(Date.UTC(y, m - 1, d)); };
+const toStr = (d) => d.toISOString().slice(0, 10);
+const addDays = (s, n) => { const d = toDate(s); d.setUTCDate(d.getUTCDate() + n); return toStr(d); };
+const daysBetween = (a, b) => Math.round((toDate(b) - toDate(a)) / 86400000);
+const weekStart = (s) => addDays(s, -((toDate(s).getUTCDay() + 6) % 7));
+const monthStart = (s) => s.slice(0, 8) + "01";
+const monthEnd = (s) => { const d = toDate(monthStart(s)); d.setUTCMonth(d.getUTCMonth() + 1); d.setUTCDate(0); return toStr(d); };
+const pad = (n) => String(n).padStart(2, "0");
+const fmtD = (y, m, d) => `${y}-${pad(m)}-${pad(d)}`;
+const prettyDate = (s) => toDate(s).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "2-digit", timeZone: "UTC" });
+const prettyRange = (r) => (r.start === r.end ? prettyDate(r.start) : `${prettyDate(r.start)} – ${prettyDate(r.end)}`);
+const previousPeriod = (s, e) => { const n = daysBetween(s, e); return { start: addDays(s, -n - 1), end: addDays(s, -1) }; };
+const eachDay = (s, e) => { const o = []; let d = s; while (d <= e && o.length < 400) { o.push(d); d = addDays(d, 1); } return o; };
+
+function presetRange(id, t) {
+  switch (id) {
+    case "today": return { start: t, end: t, prev: { start: addDays(t, -1), end: addDays(t, -1) } };
+    case "yesterday": { const y = addDays(t, -1); return { start: y, end: y, prev: { start: addDays(y, -1), end: addDays(y, -1) } }; }
+    case "thisWeek": { const s = weekStart(t), n = daysBetween(s, t); return { start: s, end: t, prev: { start: addDays(s, -7), end: addDays(s, n - 7) } }; }
+    case "lastWeek": { const s = addDays(weekStart(t), -7); return { start: s, end: addDays(s, 6), prev: { start: addDays(s, -7), end: addDays(s, -1) } }; }
+    case "thisMonth": { const s = monthStart(t), n = daysBetween(s, t), ps = monthStart(addDays(s, -1));
+      const pe = addDays(ps, n) > monthEnd(ps) ? monthEnd(ps) : addDays(ps, n); return { start: s, end: t, prev: { start: ps, end: pe } }; }
+    case "lastMonth": { const e = addDays(monthStart(t), -1), s = monthStart(e), pe = addDays(s, -1);
+      return { start: s, end: e, prev: { start: monthStart(pe), end: pe } }; }
+  }
+}
+
+function toISO(raw) {
+  const s = (raw || "").trim(); if (!s) return null;
+  let m = s.match(/^(\d{1,2})[-\s]([A-Za-z]{3})[A-Za-z]*[-\s](\d{2,4})$/);
+  if (m) { const mon = MONTHS[m[2].toLowerCase()]; if (mon === undefined) return null; let y = +m[3]; if (y < 100) y += 2000; return fmtD(y, mon + 1, +m[1]); }
+  m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+  if (m) { let y = +m[3]; if (y < 100) y += 2000; return fmtD(y, +m[2], +m[1]); }
+  m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (m) return fmtD(+m[1], +m[2], +m[3]);
+  return null;
+}
+
+// ---------- data ----------
+function parseCSV(text) {
+  const rows = []; let row = [], cell = "", q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) { if (c === '"' && text[i + 1] === '"') { cell += '"'; i++; } else if (c === '"') q = false; else cell += c; }
+    else if (c === '"') q = true;
+    else if (c === ",") { row.push(cell); cell = ""; }
+    else if (c === "\n" || c === "\r") { if (c === "\r" && text[i + 1] === "\n") i++; row.push(cell); rows.push(row); row = []; cell = ""; }
+    else cell += c;
+  }
+  if (cell || row.length) { row.push(cell); rows.push(row); }
+  return rows;
+}
+const maskPhone = (p) => { const d = (p || "").replace(/\D/g, ""); return SHOW_FULL_PHONE || d.length < 5 ? d : "xxxxxx" + d.slice(-4); };
+
+function parseRows(csv) {
+  const rows = parseCSV(csv);
+  const hi = rows.findIndex((r) => r.some((c) => c.trim().toLowerCase() === "centre"));
+  if (hi < 0) throw new Error("Couldn't find a 'Centre' column in the sheet.");
+  const h = rows[hi].map((c) => c.trim().toLowerCase()), col = (n) => h.indexOf(n);
+  const iD = col("date"), iN = col("name"), iC = col("contact"), iCe = col("centre"), iA = col("conversion");
+  const out = [];
+  for (const r of rows.slice(hi + 1)) {
+    const date = toISO(r[iD]); const raw = (r[iCe] || "").trim();
+    const centre = CENTRES.find((c) => c.toLowerCase() === raw.toLowerCase()) || raw;
+    if (!date || !centre) continue;
+    const amount = parseFloat(String(r[iA] ?? "").replace(/[^\d.]/g, "")) || 0;
+    out.push({ date, centre, name: (r[iN] || "").trim(), contact: maskPhone(r[iC]), amount, converted: amount > 0 });
+  }
+  return out;
+}
+
+async function fetchData() {
+  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=${SHEET_GID}&range=A:F&headers=1&_=${Date.now()}`;
+  const res = await fetch(url, { cache: "no-store" });
+  const text = await res.text();
+  if (!res.ok || text.trim().startsWith("<")) throw new Error('Could not read the Google Sheet. Make sure it is shared as "Anyone with the link can view".');
+  return parseRows(text);
+}
+
+// ---------- calc ----------
+function summarize(rows) {
+  const visits = rows.length, converts = rows.filter((r) => r.converted).length, collections = rows.reduce((s, r) => s + r.amount, 0);
+  return { visits, converts, collections, rate: visits ? (converts / visits) * 100 : 0 };
+}
+const inRange = (rows, r) => (r ? rows.filter((x) => x.date >= r.start && x.date <= r.end) : []);
+const inr = (n) => "₹" + Math.round(n).toLocaleString("en-IN");
+const fmtM = (m, v) => (m === "collections" ? inr(v) : v.toLocaleString("en-IN"));
+const mLabel = (m) => METRICS.find((x) => x[0] === m)[1];
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+function delta(cur, prev, show) {
+  if (!show) return "";
+  if (!prev) return `<span class="delta flat">${cur ? "new" : "—"}</span>`;
+  const p = ((cur - prev) / prev) * 100, cls = p > 0 ? "up" : p < 0 ? "down" : "flat";
+  return `<span class="delta ${cls}">${p > 0 ? "▲" : p < 0 ? "▼" : "•"} ${Math.abs(p).toFixed(0)}%</span>`;
+}
+
+// ---------- state ----------
+const T = todayIST();
+const S = {
+  rows: null, error: null, loading: true, fetchedAt: null,
+  tab: "Master", metric: "visits", preset: "thisMonth",
+  custom: { start: addDays(T, -6), end: T },
+  compareMode: "previous", cmp: { start: addDays(T, -13), end: addDays(T, -7) },
+};
+const ordered = (r) => (r.start <= r.end ? r : { start: r.end, end: r.start });
+
+function getRanges() {
+  const today = todayIST();
+  let range;
+  if (S.preset === "custom") { const c = ordered(S.custom); range = { ...c, prev: previousPeriod(c.start, c.end) }; }
+  else range = presetRange(S.preset, today);
+  const compare = S.compareMode === "none" ? null : S.compareMode === "custom" ? ordered(S.cmp) : range.prev;
+  return { range, compare };
+}
+
+// ---------- render ----------
+const $ = (id) => document.getElementById(id);
+
+function renderControls() {
+  $("tabs").innerHTML = TABS.map((t) => `<button data-tab="${t}" class="${t === S.tab ? "on" : ""}">${t}</button>`).join("");
+  $("chips").innerHTML = PRESETS.map(([id, l]) => `<button data-preset="${id}" class="chip ${id === S.preset ? "on" : ""}">${l}</button>`).join("");
+  $("customRow").hidden = S.preset !== "custom";
+  $("cs").value = S.custom.start; $("ce").value = S.custom.end;
+  $("cmpMode").value = S.compareMode;
+  $("cmpFields").hidden = S.compareMode !== "custom";
+  $("ps").value = S.cmp.start; $("pe").value = S.cmp.end;
+}
+
+function render() {
+  renderControls();
+  const { range, compare } = getRanges(), show = !!compare;
+  $("period").innerHTML = `<b>${prettyRange(range)}</b>${show ? `<span class="muted"> vs ${prettyRange(compare)}</span>` : ""}`;
+  $("refreshBtn").textContent = S.loading ? "Loading…" : "↻ Refresh";
+  $("updated").textContent = S.fetchedAt ? "Updated " + S.fetchedAt.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }) : "";
+  $("error").hidden = !S.error; $("error").textContent = S.error ? "⚠️ " + S.error : "";
+  if (!S.rows) { $("main").innerHTML = S.loading ? `<div class="empty">Loading data from Google Sheets…</div>` : ""; return; }
+
+  const scoped = S.tab === "Master" ? S.rows : S.rows.filter((r) => r.centre === S.tab);
+  const cur = inRange(scoped, range), prev = inRange(scoped, compare);
+  const A = summarize(cur), P = summarize(prev);
+
+  let html = `<section class="kpis">` + METRICS.map(([id, l]) => `
+    <button class="kpi ${S.metric === id ? "on" : ""}" data-metric="${id}">
+      <span class="kl">${l}</span><span class="kv">${fmtM(id, A[id])}</span>
+      <span class="kc">${show ? `<span class="muted">vs ${fmtM(id, P[id])}</span>` : ""}${delta(A[id], P[id], show)}</span>
+    </button>`).join("") + `
+    <div class="kpi static"><span class="kl">Conversion rate</span><span class="kv">${A.rate.toFixed(1)}%</span>
+      <span class="kc">${show ? `<span class="muted">vs ${P.rate.toFixed(1)}%</span>` : ""}</span></div></section>`;
+
+  html += `<nav class="metricTabs">` + METRICS.map(([id, l]) => `<button data-metric="${id}" class="${S.metric === id ? "on" : ""}">${l}</button>`).join("") + `</nav>`;
+  html += chart(cur, range, S.tab === "Master" ? CENTRES : [S.tab]);
+  html += S.tab === "Master" ? centreTable(cur, prev, show) + dailyPivot(cur, range) : recordTable(cur);
+  $("main").innerHTML = html;
+}
+
+function chart(rows, range, centres) {
+  const days = eachDay(range.start, range.end); if (days.length < 2) return "";
+  const m = S.metric;
+  const series = days.map((d) => {
+    const dr = rows.filter((r) => r.date === d);
+    const parts = centres.map((c) => ({ c, v: summarize(dr.filter((r) => r.centre === c))[m] }));
+    return { d, parts, total: parts.reduce((s, p) => s + p.v, 0) };
+  });
+  const max = Math.max(1, ...series.map((s) => s.total));
+  return `<section class="card"><div class="cardHead"><h2>Daily ${mLabel(m).toLowerCase()}</h2>
+    ${centres.length > 1 ? `<div class="legend">${centres.map((c) => `<span><i style="background:${COLORS[c]}"></i>${c}</span>`).join("")}</div>` : ""}</div>
+    <div class="bars">${series.map((s) => `
+      <div class="barCol" title="${prettyDate(s.d)}: ${fmtM(m, s.total)}">
+        <span class="barVal">${s.total ? (m === "collections" ? Math.round(s.total / 1000) + "k" : s.total) : ""}</span>
+        <div class="stack" style="height:${(s.total / max) * 100}%">${s.parts.filter((p) => p.v).map((p) => `<div style="flex:${p.v};background:${COLORS[p.c]}"></div>`).join("")}</div>
+        <span class="barLbl">${s.d.slice(8)}</span></div>`).join("")}</div></section>`;
+}
+
+function centreTable(cur, prev, show) {
+  const cell = (m, s, p) => `<td>${fmtM(m, s[m])}${delta(s[m], p[m], show)}${show ? `<div class="muted small">${fmtM(m, p[m])}</div>` : ""}</td>`;
+  const row = (label, s, p, dot) => `<tr${dot ? "" : ' class="total"'}><td>${dot ? `<i class="dot" style="background:${COLORS[label]}"></i>` : ""}${label}</td>
+    ${cell("visits", s, p)}${cell("converts", s, p)}<td>${s.rate.toFixed(1)}%</td>${cell("collections", s, p)}</tr>`;
+  return `<section class="card"><h2>All centres</h2><div class="scroll"><table>
+    <thead><tr><th>Centre</th><th>Visits</th><th>Converts</th><th>Conv. %</th><th>Collections</th></tr></thead><tbody>
+    ${CENTRES.map((c) => row(c, summarize(cur.filter((r) => r.centre === c)), summarize(prev.filter((r) => r.centre === c)), true)).join("")}
+    ${row("Total", summarize(cur), summarize(prev), false)}</tbody></table></div></section>`;
+}
+
+function dailyPivot(rows, range) {
+  const m = S.metric;
+  const days = eachDay(range.start, range.end).filter((d) => rows.some((r) => r.date === d)).reverse();
+  if (!days.length) return `<section class="card"><h2>Day-wise ${mLabel(m).toLowerCase()} by centre</h2><p class="muted">No entries in this period.</p></section>`;
+  return `<section class="card"><h2>Day-wise ${mLabel(m).toLowerCase()} by centre</h2><div class="scroll"><table>
+    <thead><tr><th>Date</th>${CENTRES.map((c) => `<th>${c}</th>`).join("")}<th>Total</th></tr></thead><tbody>
+    ${days.map((d) => { const dr = rows.filter((r) => r.date === d);
+      return `<tr><td>${prettyDate(d)}</td>${CENTRES.map((c) => `<td>${fmtM(m, summarize(dr.filter((r) => r.centre === c))[m])}</td>`).join("")}<td><b>${fmtM(m, summarize(dr)[m])}</b></td></tr>`; }).join("")}
+    </tbody></table></div></section>`;
+}
+
+function recordTable(rows) {
+  const m = S.metric;
+  const list = (m === "visits" ? rows : rows.filter((r) => r.converted)).slice().sort((a, b) => (a.date < b.date ? 1 : -1));
+  return `<section class="card"><h2>${mLabel(m)} <span class="muted">(${list.length})</span></h2>
+    ${!list.length ? `<p class="muted">No entries in this period.</p>` : `<div class="scroll"><table>
+    <thead><tr><th>Date</th><th>Name</th><th>Contact</th><th>Status</th><th class="num">Amount</th></tr></thead><tbody>
+    ${list.map((r) => `<tr><td>${prettyDate(r.date)}</td><td>${esc(r.name)}</td><td class="muted">${esc(r.contact)}</td>
+      <td>${r.converted ? `<span class="tag ok">Converted</span>` : `<span class="tag">Visited</span>`}</td>
+      <td class="num">${r.amount ? inr(r.amount) : "—"}</td></tr>`).join("")}</tbody></table></div>`}</section>`;
+}
+
+// ---------- events ----------
+document.addEventListener("click", (e) => {
+  const b = e.target.closest("button"); if (!b) return;
+  if (b.dataset.tab) S.tab = b.dataset.tab;
+  else if (b.dataset.preset) S.preset = b.dataset.preset;
+  else if (b.dataset.metric) S.metric = b.dataset.metric;
+  else if (b.id === "singleDay") S.cmp.end = S.cmp.start;
+  else if (b.id === "refreshBtn") return load();
+  else return;
+  render();
+});
+document.addEventListener("change", (e) => {
+  const id = e.target.id, v = e.target.value;
+  if (id === "cs") S.custom.start = v; else if (id === "ce") S.custom.end = v;
+  else if (id === "ps") S.cmp.start = v; else if (id === "pe") S.cmp.end = v;
+  else if (id === "cmpMode") S.compareMode = v; else return;
+  render();
+});
+
+async function load() {
+  S.loading = true; S.error = null; render();
+  try { S.rows = await fetchData(); S.fetchedAt = new Date(); }
+  catch (err) { S.error = err.message; }
+  S.loading = false; render();
+}
+load();
+
+</script>
+</body>
+</html>
